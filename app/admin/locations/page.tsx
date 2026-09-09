@@ -6,6 +6,7 @@ interface Location {
   _id: string;
   name: string;
   address: string;
+  destination: string;
   totalSlots: number;
   latitude: number;
   longitude: number;
@@ -16,6 +17,7 @@ export default function AdminLocationsPage() {
 
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [destination, setDestination] = useState("");
   const [totalSlots, setTotalSlots] = useState("");
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
@@ -30,7 +32,6 @@ export default function AdminLocationsPage() {
 
     try {
       const res = await fetch("/api/locations");
-
       const data = await res.json();
 
       if (!res.ok) {
@@ -42,7 +43,6 @@ export default function AdminLocationsPage() {
       setLocations(data);
     } catch (error) {
       console.error(error);
-
       setError("Failed to load locations");
     } finally {
       setLoading(false);
@@ -56,6 +56,7 @@ export default function AdminLocationsPage() {
   const resetForm = () => {
     setName("");
     setAddress("");
+    setDestination("");
     setTotalSlots("");
     setLatitude("");
     setLongitude("");
@@ -72,6 +73,7 @@ export default function AdminLocationsPage() {
     const body = {
       name,
       address,
+      destination,
       totalSlots: Number(totalSlots),
       latitude: Number(latitude),
       longitude: Number(longitude),
@@ -103,15 +105,14 @@ export default function AdminLocationsPage() {
       }
 
       resetForm();
-
       fetchLocations();
     } catch (error) {
       console.error(error);
 
       setError(
         editingId
-          ? "Failed to update location"
-          : "Failed to add location"
+          ? "Failed to update parking location"
+          : "Failed to add parking location"
       );
     }
   };
@@ -121,13 +122,14 @@ export default function AdminLocationsPage() {
 
     setName(loc.name);
     setAddress(loc.address);
+    setDestination(loc.destination);
     setTotalSlots(String(loc.totalSlots));
     setLatitude(String(loc.latitude));
     setLongitude(String(loc.longitude));
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this location?")) {
+    if (!confirm("Delete this parking location?")) {
       return;
     }
 
@@ -147,7 +149,7 @@ export default function AdminLocationsPage() {
     } catch (error) {
       console.error(error);
 
-      setError("Failed to delete location");
+      setError("Failed to delete parking location");
     }
   };
 
@@ -155,7 +157,7 @@ export default function AdminLocationsPage() {
     <div className="max-w-3xl mx-auto p-6">
 
       <h1 className="text-2xl font-bold mb-4">
-        Manage Locations
+        Manage Parking Locations
       </h1>
 
       <form
@@ -165,7 +167,7 @@ export default function AdminLocationsPage() {
 
         <input
           className="border rounded p-2"
-          placeholder="Location Name"
+          placeholder="Parking Area Name"
           value={name}
           onChange={(e) =>
             setName(e.target.value)
@@ -175,7 +177,22 @@ export default function AdminLocationsPage() {
 
         <input
           className="border rounded p-2"
-          placeholder="Address"
+          placeholder="Destination / Place Name"
+          value={destination}
+          onChange={(e) =>
+            setDestination(e.target.value)
+          }
+          required
+        />
+
+        <p className="text-xs text-gray-500">
+          Example: Phoenix Mall, VIT Chennai,
+          PVR Theatre, Chennai Airport
+        </p>
+
+        <input
+          className="border rounded p-2"
+          placeholder="Parking Area Address"
           value={address}
           onChange={(e) =>
             setAddress(e.target.value)
@@ -201,7 +218,7 @@ export default function AdminLocationsPage() {
             className="border rounded p-2"
             type="number"
             step="any"
-            placeholder="Latitude (e.g. 12.8406)"
+            placeholder="Latitude"
             value={latitude}
             onChange={(e) =>
               setLatitude(e.target.value)
@@ -213,7 +230,7 @@ export default function AdminLocationsPage() {
             className="border rounded p-2"
             type="number"
             step="any"
-            placeholder="Longitude (e.g. 80.1534)"
+            placeholder="Longitude"
             value={longitude}
             onChange={(e) =>
               setLongitude(e.target.value)
@@ -224,8 +241,8 @@ export default function AdminLocationsPage() {
         </div>
 
         <p className="text-xs text-gray-500">
-          Latitude and longitude are used to calculate
-          the distance from the user's current location.
+          Coordinates identify the parking area's
+          physical location.
         </p>
 
         <div className="flex gap-2">
@@ -235,8 +252,8 @@ export default function AdminLocationsPage() {
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
             {editingId
-              ? "Update Location"
-              : "Add Location"}
+              ? "Update Parking Area"
+              : "Add Parking Area"}
           </button>
 
           {editingId && (
@@ -260,7 +277,7 @@ export default function AdminLocationsPage() {
       </form>
 
       {loading ? (
-        <p>Loading locations...</p>
+        <p>Loading parking locations...</p>
       ) : (
 
         <ul className="flex flex-col gap-3">
@@ -269,17 +286,24 @@ export default function AdminLocationsPage() {
 
             <li
               key={loc._id}
-              className="border rounded-lg p-4 flex justify-between items-center bg-white"
+              className="border rounded-lg p-4 bg-white"
             >
 
               <div>
 
-                <p className="font-semibold">
+                <p className="font-semibold text-lg">
                   {loc.name}
                 </p>
 
-                <p className="text-sm text-gray-600">
-                  {loc.address} —{" "}
+                <p className="text-sm text-emerald-700 font-medium">
+                  Destination: {loc.destination}
+                </p>
+
+                <p className="text-sm text-gray-600 mt-1">
+                  {loc.address}
+                </p>
+
+                <p className="text-sm text-gray-500 mt-1">
                   {loc.totalSlots} slots
                 </p>
 
@@ -291,7 +315,7 @@ export default function AdminLocationsPage() {
 
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-3 mt-3">
 
                 <button
                   onClick={() =>

@@ -15,8 +15,12 @@ export async function GET() {
     console.error("Get Locations Error:", error);
 
     return NextResponse.json(
-      { error: "Failed to fetch locations" },
-      { status: 500 }
+      {
+        error: "Failed to fetch locations",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }
@@ -27,10 +31,10 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
 
-    // Validate required location information
     if (
       !body.name ||
       !body.address ||
+      !body.destination ||
       body.totalSlots === undefined ||
       body.latitude === undefined ||
       body.longitude === undefined
@@ -38,25 +42,46 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error:
-            "Name, address, total slots, latitude and longitude are required.",
+            "Parking name, address, destination, total slots, latitude and longitude are required.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    // Create the location
+    const totalSlots = Number(body.totalSlots);
+    const latitude = Number(body.latitude);
+    const longitude = Number(body.longitude);
+
+    if (
+      !Number.isFinite(totalSlots) ||
+      totalSlots <= 0 ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      return NextResponse.json(
+        {
+          error: "Invalid parking location information.",
+        },
+        {
+          status: 400,
+        }
+      );
+    }
+
     const location = await Location.create({
       name: body.name,
       address: body.address,
-      totalSlots: Number(body.totalSlots),
-      latitude: Number(body.latitude),
-      longitude: Number(body.longitude),
+      destination: body.destination,
+      totalSlots,
+      latitude,
+      longitude,
     });
 
-    // Automatically create slots based on totalSlots
     const slots = [];
 
-    for (let i = 1; i <= Number(body.totalSlots); i++) {
+    for (let i = 1; i <= totalSlots; i++) {
       slots.push({
         locationId: location._id,
         slotNumber: i,
@@ -72,14 +97,20 @@ export async function POST(req: NextRequest) {
         location,
         slots,
       },
-      { status: 201 }
+      {
+        status: 201,
+      }
     );
   } catch (error) {
     console.error("Create Location Error:", error);
 
     return NextResponse.json(
-      { error: "Failed to create location and slots" },
-      { status: 500 }
+      {
+        error: "Failed to create location and slots",
+      },
+      {
+        status: 500,
+      }
     );
   }
 }

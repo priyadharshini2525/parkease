@@ -3,6 +3,7 @@ import mongoose, { Schema, Document } from "mongoose";
 interface ILocation extends Document {
   name: string;
   address: string;
+  destination: string;
   totalSlots: number;
   latitude: number;
   longitude: number;
@@ -15,6 +16,11 @@ const LocationSchema: Schema = new Schema({
   },
 
   address: {
+    type: String,
+    required: true,
+  },
+
+  destination: {
     type: String,
     required: true,
   },

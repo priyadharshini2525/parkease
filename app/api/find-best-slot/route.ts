@@ -4,116 +4,93 @@ import connectDB from "@/lib/mongodb";
 import Location from "@/models/Location";
 import Slot from "@/models/Slot";
 
-function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-) {
-  const earthRadius = 6371;
-
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-  return earthRadius * c;
-}
-
 export async function POST(req: NextRequest) {
   try {
     await connectDB();
 
     const body = await req.json();
 
-    const userLatitude = Number(body.latitude);
-    const userLongitude = Number(body.longitude);
+    const destination = String(
+      body.destination || ""
+    ).trim();
 
-    if (
-      !Number.isFinite(userLatitude) ||
-      !Number.isFinite(userLongitude)
-    ) {
+    if (!destination) {
       return NextResponse.json(
         {
-          error: "Valid user location is required.",
+          error: "Please enter a destination.",
         },
-        { status: 400 }
+        {
+          status: 400,
+        }
       );
     }
 
-    // Get every registered parking location
-    const locations = await Location.find({});
+    // Find all parking areas belonging to
+    // the requested destination.
+    const locations = await Location.find({
+      destination: {
+        $regex: destination,
+        $options: "i",
+      },
+    });
 
     if (locations.length === 0) {
       return NextResponse.json(
         {
-          error: "No parking locations are available.",
+          error:
+            "No parking locations found for this destination.",
         },
-        { status: 404 }
+        {
+          status: 404,
+        }
       );
     }
 
     const candidates = [];
 
+    // Check every parking area for live availability.
     for (const location of locations) {
-      // Find available slots at this location
       const availableSlots = await Slot.find({
         locationId: location._id,
         status: "available",
-      }).sort({ slotNumber: 1 });
+      }).sort({
+        slotNumber: 1,
+      });
 
-      // Ignore locations with no available slots
+      // Don't recommend a completely full parking area.
       if (availableSlots.length === 0) {
         continue;
       }
-
-      const distance = calculateDistance(
-        userLatitude,
-        userLongitude,
-        location.latitude,
-        location.longitude
-      );
 
       candidates.push({
         location,
         availableSlots,
         availableCount: availableSlots.length,
-        distance,
       });
     }
 
     if (candidates.length === 0) {
       return NextResponse.json(
         {
-          error: "No parking slots are currently available.",
+          error:
+            "All parking locations for this destination are currently full.",
         },
-        { status: 404 }
+        {
+          status: 404,
+        }
       );
     }
 
     /*
-      Ranking logic:
+      Best parking logic:
 
-      1. Prefer the closest parking location.
-      2. If two locations are almost equally close,
-         prefer the one with more available slots.
+      1. Prefer parking areas with more available slots.
+      2. If availability is the same, prefer the
+         parking area with the smaller slot number.
     */
 
     candidates.sort((a, b) => {
-      const distanceDifference = a.distance - b.distance;
-
-      if (Math.abs(distanceDifference) < 0.5) {
-        return b.availableCount - a.availableCount;
-      }
-
-      return distanceDifference;
+      return b.availableCount - a.availableCount;
     });
 
     const best = candidates[0];
@@ -123,12 +100,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
 
+      destination: best.location.destination,
+
       location: {
         id: best.location._id,
         name: best.location.name,
         address: best.location.address,
-        latitude: best.location.latitude,
-        longitude: best.location.longitude,
       },
 
       slot: {
@@ -137,20 +114,27 @@ export async function POST(req: NextRequest) {
         status: bestSlot.status,
       },
 
-      distance: Number(best.distance.toFixed(2)),
-
       availableSlots: best.availableCount,
 
-      message: "Best parking slot found.",
+      totalSlots: best.location.totalSlots,
+
+      message:
+        "Best parking option found.",
     });
   } catch (error) {
-    console.error("Find Best Slot Error:", error);
+    console.error(
+      "Find Best Slot Error:",
+      error
+    );
 
     return NextResponse.json(
       {
-        error: "Failed to find the best parking slot.",
+        error:
+          "Failed to find the best parking slot.",
       },
-      { status: 500 }
+      {
+        status: 500,
+      }
     );
   }
 }
