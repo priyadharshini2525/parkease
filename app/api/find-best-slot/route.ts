@@ -1,22 +1,39 @@
-import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/mongodb';
-import Slot from '@/models/Slot';
-import Reservation from '@/models/Reservation';
+import { NextRequest, NextResponse } from "next/server";
+import connectDB from "@/lib/mongodb";
+import Slot from "@/models/Slot";
 
 export async function POST(req: NextRequest) {
-  await connectDB();
-  const body = await req.json();
-  const { userId } = body;
+  try {
+    await connectDB();
 
-  const slot = await Slot.findOne({ status: 'available' }).populate('locationId');
+    const body = await req.json();
+    console.log("Find Best Slot request:", body);
 
-  if (!slot) {
-    return NextResponse.json({ error: 'No slots available' }, { status: 404 });
+    const bestSlot = await Slot.findOne({
+      status: "available",
+    })
+      .populate("locationId", "name address")
+      .sort({ slotNumber: 1 });
+
+    console.log("BEST SLOT:", bestSlot);
+
+    if (!bestSlot) {
+      return NextResponse.json(
+        { error: "No parking slots are currently available." },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      slot: bestSlot,
+    });
+  } catch (error) {
+    console.error("Find Best Slot Error:", error);
+
+    return NextResponse.json(
+      { error: "Failed to find the best parking slot." },
+      { status: 500 }
+    );
   }
-
-  const reservation = await Reservation.create({ slotId: slot._id, userId });
-  slot.status = 'reserved';
-  await slot.save();
-
-  return NextResponse.json({ reservation, slot });
 }
