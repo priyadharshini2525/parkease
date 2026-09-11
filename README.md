@@ -4,7 +4,7 @@ ParkEase is a full-stack parking management web application that helps users fin
 
 ## Live Demo
 
-**Vercel:** https://parkeaseplatform-ch70j8g6g-android1.vercel.app/
+**Vercel:** https://parkeaseplatform-5ytxnsuk7-android1.vercel.app/
 
 ## GitHub Repository
 
