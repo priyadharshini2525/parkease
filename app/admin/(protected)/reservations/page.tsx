@@ -21,22 +21,33 @@ interface Reservation {
   userId: string;
   userName: string;
   phoneNumber: string;
-  slotId: Slot;
+  slotId: Slot | null;
   status: string;
-  createdAt: string;
+  reservedAt: string;
 }
 
 export default function AdminReservationsPage() {
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchReservations = async () => {
-    setLoading(true);
+  const fetchReservations = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
     setError("");
 
     try {
-      const res = await fetch("/api/reservations");
+      const res = await fetch(
+        `/api/reservations?t=${Date.now()}`,
+        {
+          cache: "no-store",
+        }
+      );
 
       const data = await res.json();
 
@@ -46,12 +57,20 @@ export default function AdminReservationsPage() {
         );
       }
 
-      setReservations(data);
+      // Make sure newest reservation appears first
+      const sortedReservations = [...data].sort(
+        (a: Reservation, b: Reservation) =>
+          new Date(b.reservedAt).getTime() -
+          new Date(a.reservedAt).getTime()
+      );
+
+      setReservations(sortedReservations);
     } catch (error) {
       console.error(error);
       setError("Failed to load reservations");
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
@@ -59,56 +78,42 @@ export default function AdminReservationsPage() {
     fetchReservations();
   }, []);
 
-  const handleCancel = async (id: string) => {
-    const confirmCancel = confirm(
-      "Are you sure you want to cancel this reservation?"
-    );
-
-    if (!confirmCancel) {
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        `/api/reservations/${id}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(
-          data.error || "Failed to cancel reservation"
-        );
-      }
-
-      fetchReservations();
-    } catch (error) {
-      console.error(error);
-      setError("Failed to cancel reservation");
-    }
-  };
-
   return (
     <div className="max-w-5xl mx-auto p-6">
 
-      <h1 className="text-2xl font-bold mb-2">
-        Reservations
-      </h1>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
 
-      <p className="text-gray-600 mb-6">
-        View and manage parking reservations made by
-        users.
-      </p>
+        <div>
+          <h1 className="text-2xl font-bold">
+            Reservations
+          </h1>
 
+          <p className="text-gray-600 mt-1">
+            View parking reservations made by users.
+          </p>
+        </div>
+
+        <button
+          onClick={() => fetchReservations(true)}
+          disabled={refreshing}
+          className="bg-green-800 hover:bg-green-900 disabled:opacity-60 text-white px-4 py-2 rounded-lg"
+        >
+          {refreshing
+            ? "Refreshing..."
+            : "Refresh Reservations"}
+        </button>
+
+      </div>
+
+      {/* Error */}
       {error && (
         <div className="bg-red-100 text-red-700 border border-red-300 rounded-lg p-3 mb-5">
           {error}
         </div>
       )}
 
+      {/* Loading */}
       {loading ? (
         <p>Loading reservations...</p>
       ) : reservations.length === 0 ? (
@@ -121,7 +126,6 @@ export default function AdminReservationsPage() {
         <div className="flex flex-col gap-4">
 
           {reservations.map((reservation) => {
-
             const location =
               reservation.slotId?.locationId;
 
@@ -131,20 +135,23 @@ export default function AdminReservationsPage() {
                 className="border rounded-lg p-5 bg-white shadow-sm"
               >
 
-                {/* USER INFORMATION */}
+                {/* User Information */}
                 <div className="mb-5">
                   <h2 className="text-xl font-semibold">
-                    {reservation.userName}
+                    {reservation.userName || "Unknown user"}
                   </h2>
 
                   <p className="text-sm text-gray-600 mt-1">
-                    Phone: {reservation.phoneNumber}
+                    Phone:{" "}
+                    {reservation.phoneNumber ||
+                      "Not provided"}
                   </p>
                 </div>
 
-                {/* RESERVATION INFORMATION */}
+                {/* Reservation Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+                  {/* Parking Area */}
                   <div>
                     <p className="text-xs text-gray-500">
                       Parking Area
@@ -156,6 +163,7 @@ export default function AdminReservationsPage() {
                     </p>
                   </div>
 
+                  {/* Destination */}
                   <div>
                     <p className="text-xs text-gray-500">
                       Destination
@@ -167,6 +175,7 @@ export default function AdminReservationsPage() {
                     </p>
                   </div>
 
+                  {/* Address */}
                   <div>
                     <p className="text-xs text-gray-500">
                       Address
@@ -178,6 +187,7 @@ export default function AdminReservationsPage() {
                     </p>
                   </div>
 
+                  {/* Slot */}
                   <div>
                     <p className="text-xs text-gray-500">
                       Slot
@@ -190,6 +200,7 @@ export default function AdminReservationsPage() {
                     </p>
                   </div>
 
+                  {/* Status */}
                   <div>
                     <p className="text-xs text-gray-500">
                       Status
@@ -197,44 +208,33 @@ export default function AdminReservationsPage() {
 
                     <span
                       className={`inline-block mt-1 px-3 py-1 rounded-full text-sm font-medium ${
-                        reservation.status === "reserved"
+                        reservation.status === "active"
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-700"
                       }`}
                     >
-                      {reservation.status}
+                      {reservation.status === "active"
+                        ? "Reserved"
+                        : "Cancelled"}
                     </span>
                   </div>
 
+                  {/* Reserved At */}
                   <div>
                     <p className="text-xs text-gray-500">
                       Reserved At
                     </p>
 
                     <p className="font-medium mt-1">
-                      {new Date(
-                        reservation.createdAt
-                      ).toLocaleString()}
+                      {reservation.reservedAt
+                        ? new Date(
+                            reservation.reservedAt
+                          ).toLocaleString()
+                        : "Unknown time"}
                     </p>
                   </div>
 
                 </div>
-
-                {/* CANCEL */}
-                {reservation.status === "reserved" && (
-                  <div className="mt-5 pt-4 border-t">
-
-                    <button
-                      onClick={() =>
-                        handleCancel(reservation._id)
-                      }
-                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                    >
-                      Cancel Reservation
-                    </button>
-
-                  </div>
-                )}
 
               </div>
             );

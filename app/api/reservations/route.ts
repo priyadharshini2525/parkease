@@ -6,6 +6,9 @@ import Reservation from "@/models/Reservation";
 import Slot from "@/models/Slot";
 import Location from "@/models/Location";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
@@ -22,9 +25,14 @@ export async function GET(req: NextRequest) {
           model: Location,
         },
       })
-      .sort({ createdAt: -1 });
+      .sort({ reservedAt: -1 })
+      .lean();
 
-    return NextResponse.json(reservations);
+    return NextResponse.json(reservations, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate",
+      },
+    });
   } catch (error) {
     console.error("GET reservations error:", error);
 
@@ -89,10 +97,12 @@ export async function POST(req: NextRequest) {
     slot.status = "reserved";
     await slot.save();
 
-    return NextResponse.json(
-      reservation,
-      { status: 201 }
-    );
+    return NextResponse.json(reservation, {
+      status: 201,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
   } catch (error) {
     console.error("POST reservations error:", error);
 
