@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,6 +12,17 @@ interface Location {
   totalSlots: number;
   latitude: number;
   longitude: number;
+}
+
+interface Slot {
+  _id: string;
+  slotNumber: number;
+  status: "available" | "reserved";
+}
+
+interface LocationWithAvailability extends Location {
+  availableSlots: number;
+  reservedSlots: number;
 }
 
 interface BestSlotResult {
@@ -33,7 +45,9 @@ interface BestSlotResult {
 }
 
 export default function Home() {
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [locations, setLocations] = useState<
+    LocationWithAvailability[]
+  >([]);
 
   const [loading, setLoading] = useState(true);
 
@@ -49,19 +63,79 @@ export default function Home() {
   useEffect(() => {
     const loadLocations = async () => {
       try {
-        const res = await fetch(
-          "/api/locations"
+        const locationRes = await fetch(
+          "/api/locations",
+          {
+            cache: "no-store",
+          }
         );
 
-        if (!res.ok) {
+        if (!locationRes.ok) {
           throw new Error(
             "Failed to load locations"
           );
         }
 
-        const data = await res.json();
+        const locationData: Location[] =
+          await locationRes.json();
 
-        setLocations(data);
+        const locationsWithAvailability =
+          await Promise.all(
+            locationData.map(async (location) => {
+              try {
+                const slotRes = await fetch(
+                  `/api/slots?locationId=${location._id}`,
+                  {
+                    cache: "no-store",
+                  }
+                );
+
+                if (!slotRes.ok) {
+                  return {
+                    ...location,
+                    availableSlots: 0,
+                    reservedSlots: 0,
+                  };
+                }
+
+                const slots: Slot[] =
+                  await slotRes.json();
+
+                const availableSlots =
+                  slots.filter(
+                    (slot) =>
+                      slot.status === "available"
+                  ).length;
+
+                const reservedSlots =
+                  slots.filter(
+                    (slot) =>
+                      slot.status === "reserved"
+                  ).length;
+
+                return {
+                  ...location,
+                  availableSlots,
+                  reservedSlots,
+                };
+              } catch (error) {
+                console.error(
+                  `Failed to load slots for ${location.name}:`,
+                  error
+                );
+
+                return {
+                  ...location,
+                  availableSlots: 0,
+                  reservedSlots: 0,
+                };
+              }
+            })
+          );
+
+        setLocations(
+          locationsWithAvailability
+        );
       } catch (error) {
         console.error(
           "Location loading error:",
@@ -147,16 +221,16 @@ export default function Home() {
 
   if (loading) {
     return (
-      <div className="p-8 bg-stone-50 min-h-screen">
+      <div className="min-h-screen bg-stone-50 p-8">
         Loading...
       </div>
     );
   }
 
   return (
-    <div className="p-8 bg-[#f3ede3] min-h-screen">
+    <div className="min-h-screen bg-[#f3ede3] p-8">
 
-      <h1 className="text-3xl font-bold mb-6 text-stone-900">
+      <h1 className="mb-6 text-3xl font-bold text-stone-900">
         ParkEase
       </h1>
 
@@ -164,17 +238,17 @@ export default function Home() {
 
       <div className="mb-8 max-w-xl">
 
-        <h2 className="text-2xl font-bold text-stone-900 mb-2">
-          ⭐ Find Best Slot
+        <h2 className="mb-2 text-2xl font-bold text-stone-900">
+          Find Best Slot
         </h2>
 
-        <p className="text-stone-600 mb-4">
+        <p className="mb-4 text-stone-600">
           Tell us where you want to park and
           ParkEase will find the best available
           parking option for you.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
 
           <input
             type="text"
@@ -183,13 +257,13 @@ export default function Home() {
               setDestination(e.target.value)
             }
             placeholder="Where do you want to park? e.g. Phoenix Mall"
-            className="flex-1 border border-stone-300 rounded-lg px-4 py-3 bg-white outline-none focus:border-emerald-800"
+            className="flex-1 rounded-lg border border-stone-300 bg-white px-4 py-3 outline-none focus:border-emerald-800"
           />
 
           <button
             onClick={handleFindBest}
             disabled={finding}
-            className="bg-emerald-800 hover:bg-emerald-900 disabled:bg-stone-400 text-white px-5 py-3 rounded-lg font-semibold transition"
+            className="rounded-lg bg-emerald-800 px-5 py-3 font-semibold text-white transition hover:bg-emerald-900 disabled:bg-stone-400"
           >
             {finding
               ? "Finding..."
@@ -203,17 +277,17 @@ export default function Home() {
       {/* Best Slot Result */}
 
       {result && (
-        <div className="mb-8 border-2 border-emerald-800 bg-emerald-50 rounded-lg p-5 max-w-xl">
+        <div className="mb-8 max-w-xl rounded-lg border-2 border-emerald-800 bg-emerald-50 p-5">
 
-          <p className="text-sm text-emerald-800 font-semibold uppercase tracking-wide mb-2">
-            ⭐ Best Parking Option
+          <p className="mb-2 text-sm font-semibold uppercase tracking-wide text-emerald-800">
+            Best Parking Option
           </p>
 
-          <p className="text-sm text-stone-500 mb-1">
+          <p className="mb-1 text-sm text-stone-500">
             Destination
           </p>
 
-          <p className="text-lg font-semibold text-stone-900 mb-3">
+          <p className="mb-3 text-lg font-semibold text-stone-900">
             {result.destination}
           </p>
 
@@ -225,21 +299,21 @@ export default function Home() {
             {result.location.name}
           </p>
 
-          <p className="text-stone-600 mb-3">
+          <p className="mb-3 text-stone-600">
             {result.location.address}
           </p>
 
           <div className="space-y-1 text-stone-700">
 
             <p>
-              🅿️{" "}
+              {" "}
               <strong>
                 Slot {result.slot.slotNumber}
               </strong>
             </p>
 
             <p>
-              🟢{" "}
+              {" "}
               <strong>
                 {result.availableSlots}
               </strong>{" "}
@@ -247,7 +321,7 @@ export default function Home() {
             </p>
 
             <p>
-              📊{" "}
+              {" "}
               <strong>
                 {result.totalSlots}
               </strong>{" "}
@@ -258,7 +332,7 @@ export default function Home() {
 
           <Link
             href={`/locations/${result.location.id}`}
-            className="inline-block mt-4 bg-emerald-800 hover:bg-emerald-900 text-white px-4 py-2 rounded-lg font-semibold transition"
+            className="mt-4 inline-block rounded-lg bg-emerald-800 px-4 py-2 font-semibold text-white transition hover:bg-emerald-900"
           >
             View Parking & Reserve
           </Link>
@@ -269,9 +343,9 @@ export default function Home() {
       {/* Error */}
 
       {errorMsg && (
-        <div className="mb-6 border-2 border-amber-800 bg-amber-50 rounded-lg p-4 max-w-xl">
+        <div className="mb-6 max-w-xl rounded-lg border-2 border-amber-800 bg-amber-50 p-4">
 
-          <p className="text-amber-900 font-medium">
+          <p className="font-medium text-amber-900">
             {errorMsg}
           </p>
 
@@ -280,21 +354,21 @@ export default function Home() {
 
       {/* Existing Parking Locations */}
 
-      <h2 className="text-2xl font-bold text-stone-900 mb-4">
+      <h2 className="mb-4 text-2xl font-bold text-stone-900">
         Parking Locations
       </h2>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
 
         {locations.map((loc) => (
 
           <Link
             key={loc._id}
             href={`/locations/${loc._id}`}
-            className="border border-stone-300 bg-white rounded-lg p-4 hover:shadow-md hover:border-emerald-800 transition"
+            className="rounded-lg border border-stone-300 bg-white p-4 transition hover:border-emerald-800 hover:shadow-md"
           >
 
-            <p className="text-sm text-emerald-700 font-medium mb-1">
+            <p className="mb-1 text-sm font-medium text-emerald-700">
               {loc.destination}
             </p>
 
@@ -306,8 +380,34 @@ export default function Home() {
               {loc.address}
             </p>
 
-            <p className="text-sm mt-2 text-stone-500">
-              {loc.totalSlots} total slots
+            {/* Slot Availability */}
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+
+              <div className="rounded-lg bg-green-100 p-3">
+                <p className="text-xs font-medium text-green-800">
+                  Available
+                </p>
+
+                <p className="mt-1 text-xl font-bold text-green-900">
+                  {loc.availableSlots}
+                </p>
+              </div>
+
+              <div className="rounded-lg bg-red-100 p-3">
+                <p className="text-xs font-medium text-red-800">
+                  Reserved
+                </p>
+
+                <p className="mt-1 text-xl font-bold text-red-900">
+                  {loc.reservedSlots}
+                </p>
+              </div>
+
+            </div>
+
+            <p className="mt-3 text-sm font-medium text-stone-500">
+              {loc.availableSlots + loc.reservedSlots} total slots
             </p>
 
           </Link>
@@ -319,3 +419,4 @@ export default function Home() {
     </div>
   );
 }
+

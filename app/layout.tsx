@@ -56,7 +56,7 @@ export default function RootLayout({
               </Link>
 
               <Link
-                href="/admin/locations"
+                href="/admin/login"
                 className="text-[#5a4636] hover:text-[#285943] font-medium transition"
               >
                 Admin
