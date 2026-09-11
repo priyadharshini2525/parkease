@@ -1,7 +1,8 @@
+
 import { cookies } from "next/headers";
 import crypto from "crypto";
 
-export async function isAdminAuthenticated() {
+export async function isAdminAuthenticated(): Promise<boolean> {
   const cookieStore = await cookies();
   const token = cookieStore.get("admin_token")?.value;
 
@@ -31,7 +32,7 @@ export async function isAdminAuthenticated() {
 
   try {
     const decoded = JSON.parse(
-      Buffer.from(payload, "base64url").toString()
+      Buffer.from(payload, "base64url").toString("utf-8")
     );
 
     if (decoded.admin !== true) {
@@ -40,8 +41,8 @@ export async function isAdminAuthenticated() {
 
     // Session expires after 8 hours
     if (
-      Date.now() - decoded.timestamp >
-      8 * 60 * 60 * 1000
+      typeof decoded.timestamp !== "number" ||
+      Date.now() - decoded.timestamp > 8 * 60 * 60 * 1000
     ) {
       return false;
     }
@@ -51,3 +52,4 @@ export async function isAdminAuthenticated() {
     return false;
   }
 }
+

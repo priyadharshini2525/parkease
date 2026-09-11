@@ -1,7 +1,9 @@
+
 import { redirect } from "next/navigation";
+
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 
-export default async function AdminLayout({
+export default async function AdminProtectedLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -14,3 +16,4 @@ export default async function AdminLayout({
 
   return <>{children}</>;
 }
+

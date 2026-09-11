@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -54,9 +55,7 @@ export default function AdminLoginPage() {
   return (
     <div className="min-h-[calc(100vh-73px)] flex items-center justify-center px-6 bg-[#f3ede3]">
       <div className="w-full max-w-md">
-
         <div className="bg-white border border-[#cdbda8] rounded-xl shadow-sm p-6">
-
           <div className="text-center mb-6">
             <h1 className="text-3xl font-bold text-[#3f2b20]">
               Admin Login
@@ -71,7 +70,6 @@ export default function AdminLoginPage() {
             onSubmit={handleLogin}
             className="flex flex-col gap-4"
           >
-
             <div>
               <label className="block text-sm font-medium text-[#4b3a2d] mb-1">
                 Phone Number
@@ -100,12 +98,10 @@ export default function AdminLoginPage() {
             >
               {loading ? "Checking..." : "Login as Admin"}
             </button>
-
           </form>
-
         </div>
-
       </div>
     </div>
   );
 }
+
