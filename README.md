@@ -53,22 +53,12 @@ Screenshots of the application are available in the screenshots folder.
 * Mongoose
 * Vercel
 
-## Project Structure
+##  Key Functionality
+Smart Parking Selection
 
-ParkEase
-├── app
-│   ├── admin
-│   ├── api
-│   ├── locations
-│   ├── history
-│   └── page.tsx
-├── lib
-│   └── mongodb.ts
-├── models
-│   ├── Location.ts
-│   ├── Slot.ts
-│   └── Reservation.ts
-└── README.md
+Users can select a destination or parking area instead of searching through all parking spaces manually. ParkEase then displays the available parking slots associated with that location.
+
+
 
 
 ## How It Works
