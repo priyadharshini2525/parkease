@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ParkEase
 
-## Getting Started
+ParkEase is a full-stack parking management web application that helps users find and reserve available parking slots at different destinations.
 
-First, run the development server:
+## Live Demo
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**Vercel:** https://parkeaseplatform-ch70j8g6g-android1.vercel.app/
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## GitHub Repository
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**GitHub:** https://github.com/priyadharshini2525/parkease
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Demo
 
-## Learn More
+**Demo Video:** [Watch the ParkEase Demo]https://drive.google.com/file/d/1QGZ9ZVJRwEI-tlISKgye4XW0Y-kMGfMA/view?usp=sharing
 
-To learn more about Next.js, take a look at the following resources:
+## Screenshots
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Screenshots of the application are available in the screenshots folder.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Features
 
-## Deploy on Vercel
+### User Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+* Browse available parking locations
+* View parking slots for each location
+* Find the best available slot for a selected destination
+* Reserve an available parking slot
+* Enter name and phone number while making a reservation
+* Cancel reservations
+* View reservation history
+* View parking location, address, destination, slot number, status and reservation time
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Admin Features
+
+* Secure admin login
+* Admin dashboard
+* View total and available parking slots
+* Create and manage parking locations
+* Automatically create parking slots when a location is created
+* Manage parking slots
+* View user reservations
+* View user name and phone number
+* View reservation status and details
+
+## Tech Stack
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+* MongoDB Atlas
+* Mongoose
+* Vercel
+
+## Project Structure
+
+ParkEase
+├── app
+│   ├── admin
+│   ├── api
+│   ├── locations
+│   ├── history
+│   └── page.tsx
+├── lib
+│   └── mongodb.ts
+├── models
+│   ├── Location.ts
+│   ├── Slot.ts
+│   └── Reservation.ts
+└── README.md
+
+
+## How It Works
+
+1. Users open ParkEase and browse available parking locations.
+2. Users select a destination or parking area.
+3. Available and reserved slots are displayed.
+4. Users select an available slot and provide their name and phone number.
+5. The reservation is stored in MongoDB.
+6. The selected slot changes to reserved.
+7. Users can view their reservation in History.
+8. Admins can log in and manage parking locations, slots and reservations.
+
+## Deployment
+
+The application is deployed using Vercel.
+
+Database persistence is handled using MongoDB Atlas with Mongoose.
+
+## Project
+
+ParkEase was developed as a full-stack web development project with a focus on parking slot management, reservation handling, database persistence and deployment.
